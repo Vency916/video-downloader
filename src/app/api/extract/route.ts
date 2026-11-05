@@ -2,6 +2,10 @@ import { extractMedia } from "@/lib/extractors";
 import { ExtractResponse } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -38,4 +42,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

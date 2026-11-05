@@ -1,6 +1,10 @@
 import { verifyDownloadToken } from "@/lib/url-signer";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 const MIME_MAP: Record<string, string> = {
   mp4: "video/mp4",
   mp3: "audio/mpeg",
@@ -93,4 +97,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
