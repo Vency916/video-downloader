@@ -1,11 +1,13 @@
 import { detectPlatform, extractUrlFromText } from "../platform-detector";
 import { MediaResult } from "../types";
 import {
+  extractFacebook,
   extractInstagram,
   extractPinterest,
   extractReddit,
   extractTwitter,
   extractViaCobalt,
+  extractYouTube,
 } from "./social-multi";
 import { extractTikTok } from "./tiktok";
 import { extractWithYtDlp } from "./ytdlp";
@@ -15,7 +17,7 @@ import { extractWithYtDlp } from "./ytdlp";
  * 1. Sanitizes and extracts the clean URL from pasted text
  * 2. Detects platform
  * 3. Runs dedicated platform HD no-watermark extractor
- * 4. Automatically falls back to Cobalt (if configured) or yt-dlp (if installed locally)
+ * 4. Automatically falls back to Cobalt (if configured) or local yt-dlp (if installed locally)
  */
 export async function extractMedia(rawInput: string): Promise<MediaResult> {
   const cleanUrl = extractUrlFromText(rawInput);
@@ -26,7 +28,7 @@ export async function extractMedia(rawInput: string): Promise<MediaResult> {
   const platform = detectPlatform(cleanUrl);
   const errors: string[] = [];
 
-  // 1. Platform-Specific Direct Extractors (Zero external binary required)
+  // 1. Platform-Specific Direct Cloud Extractors
   try {
     switch (platform) {
       case "tiktok":
@@ -35,6 +37,10 @@ export async function extractMedia(rawInput: string): Promise<MediaResult> {
         return await extractTwitter(cleanUrl);
       case "reddit":
         return await extractReddit(cleanUrl);
+      case "facebook":
+        return await extractFacebook(cleanUrl);
+      case "youtube":
+        return await extractYouTube(cleanUrl);
       case "instagram":
         return await extractInstagram(cleanUrl);
       case "pinterest":
@@ -46,7 +52,7 @@ export async function extractMedia(rawInput: string): Promise<MediaResult> {
     errors.push(err instanceof Error ? err.message : String(err));
   }
 
-  // 2. Secondary Fallback: Cobalt API (if COBALT_API_URL is configured in environment)
+  // 2. Secondary Fallback: Cobalt API (if COBALT_API_URL is configured)
   if (process.env.COBALT_API_URL) {
     try {
       return await extractViaCobalt(cleanUrl, platform);
@@ -57,17 +63,13 @@ export async function extractMedia(rawInput: string): Promise<MediaResult> {
     }
   }
 
-  // 3. Universal Fallback: Local yt-dlp binary (supports YouTube, Facebook, Instagram, TikTok, 1000+ sites)
+  // 3. Local Binary Fallback: Local yt-dlp (works in local dev environments)
   try {
     return await extractWithYtDlp(cleanUrl, platform);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (!msg.includes("ENOENT")) {
       errors.push(`yt-dlp: ${msg}`);
-    } else if (platform === "youtube" || platform === "facebook") {
-      errors.push(
-        `For ${platform.toUpperCase()} extraction, install yt-dlp on your machine (e.g. "winget install yt-dlp") or set COBALT_API_URL in .env.local.`
-      );
     }
   }
 
@@ -76,4 +78,3 @@ export async function extractMedia(rawInput: string): Promise<MediaResult> {
       "Unable to extract media from this link. Make sure the video is public and the URL is valid."
   );
 }
-
